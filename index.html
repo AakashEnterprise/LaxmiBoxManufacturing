@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laxmi Box Manufacturing </title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Google Material Symbols Outlined -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <!-- Custom Design System Stylesheets (No frameworks, pure CSS) -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/forms.css">
+  <link rel="stylesheet" href="css/tables.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Fixed Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <a href="#/dashboard" class="sidebar-logo">
+          <div class="logo-icon-box">
+            <span class="material-symbols-outlined text-[20px]">layers</span>
+          </div>
+          <div class="logo-text-group">
+            <span class="logo-title">Laxmi Box </span>
+            <span class="logo-subtitle">Manufacturing</span>
+          </div>
+        </a>
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+          <span class="material-symbols-outlined text-[20px]">menu_open</span>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Overview Group -->
+        <div class="nav-section">
+          <div class="nav-section-title">Overview</div>
+          <a href="#/dashboard" class="nav-item active">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">dashboard</span>
+              <span>Executive Dashboard</span>
+            </div>
+          </a>
+          <a href="#/factory" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">precision_manufacturing</span>
+              <span>Factory Floor Live</span>
+            </div>
+            <span class="telemetry-pulse-dot animate-pulse"></span>
+          </a>
+          <a href="#/approvals" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">assignment_turned_in</span>
+              <span>Approvals Inbox</span>
+            </div>
+            <span class="nav-badge badge-error" id="sidebarApprovalsBadge">4</span>
+          </a>
+        </div>
+
+        <!-- Sales & CRM Group -->
+        <div class="nav-section">
+          <div class="nav-section-title">Sales & CRM</div>
+          <a href="#/customers" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">business</span>
+              <span>Customers & Accounts</span>
+            </div>
+          </a>
+          <a href="#/quotations" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">calculate</span>
+              <span>Box Quotation & Costing</span>
+            </div>
+          </a>
+          <a href="#/sales-orders" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <span>Sales Orders (SO)</span>
+            </div>
+          </a>
+          <a href="#/products" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">inventory_2</span>
+              <span>Box Specification Master</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Production & Shop Floor -->
+        <div class="nav-section">
+          <div class="nav-section-title">Production & Shop Floor</div>
+          <a href="#/production/planning" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">calendar_month</span>
+              <span>Production Scheduler</span>
+            </div>
+          </a>
+          <a href="#/production/jobs" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">badge</span>
+              <span>Job Cards / Work Orders</span>
+            </div>
+            <span class="nav-badge badge-primary" id="sidebarJobsBadge">4</span>
+          </a>
+          <a href="#/mrp" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">schema</span>
+              <span>MRP & Material Planning</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Inventory & Paper Store -->
+        <div class="nav-section">
+          <div class="nav-section-title">Inventory & Paper Store</div>
+          <a href="#/inventory/reels" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">album</span>
+              <span>Reel Inventory (Deckle/GSM)</span>
+            </div>
+          </a>
+          <a href="#/inventory/fg" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">warehouse</span>
+              <span>FG Warehouse</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Procurement & Suppliers -->
+        <div class="nav-section">
+          <div class="nav-section-title">Procurement & Vendors</div>
+          <a href="#/procurement" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">shopping_cart</span>
+              <span>Paper Mills & Purchase Orders</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Quality & Lab -->
+        <div class="nav-section">
+          <div class="nav-section-title">Quality & Lab</div>
+          <a href="#/quality" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">science</span>
+              <span>Reel GSM & Moisture Lab</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Dispatch & Logistics -->
+        <div class="nav-section">
+          <div class="nav-section-title">Dispatch & Logistics</div>
+          <a href="#/dispatch" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">local_shipping</span>
+              <span>Dispatch & Challans</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Finance & Accounting -->
+        <div class="nav-section">
+          <div class="nav-section-title">Finance & Profitability</div>
+          <a href="#/finance" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">receipt</span>
+              <span>Invoices & GST Breakup</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Workforce & Maintenance -->
+        <div class="nav-section">
+          <div class="nav-section-title">Assets & People</div>
+          <a href="#/people" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">group</span>
+              <span>Employees & Shifts</span>
+            </div>
+          </a>
+          <a href="#/maintenance" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">build</span>
+              <span>Machine Register & PM</span>
+            </div>
+          </a>
+          <a href="#/waste" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">recycling</span>
+              <span>Scrap & Trim Waste</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Reports & Administration -->
+        <div class="nav-section">
+          <div class="nav-section-title">Administration</div>
+          <a href="#/reports" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">analytics</span>
+              <span>Reports & Analytics</span>
+            </div>
+          </a>
+          <a href="#/documents" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">folder_open</span>
+              <span>Document Repository</span>
+            </div>
+          </a>
+          <a href="#/settings" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">settings</span>
+              <span>Settings & Demo Reset</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Demonstration Portals -->
+        <div class="nav-section">
+          <div class="nav-section-title">External Portals</div>
+          <a href="#/portal/customer" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">storefront</span>
+              <span>Customer Portal Demo</span>
+            </div>
+          </a>
+          <a href="#/portal/supplier" class="nav-item">
+            <div class="nav-item-content">
+              <span class="material-symbols-outlined">domain</span>
+              <span>Supplier Portal Demo</span>
+            </div>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Sidebar Bottom Telemetry -->
+      <div class="sidebar-footer">
+        <div class="plant-status-pill">
+          <div class="plant-status-info">
+            <span class="telemetry-pulse-dot animate-ping"></span>
+            <div class="plant-text" style="display:flex; flex-direction:column; line-height:1.2;">
+              <strong style="color:#ffffff; font-size:12px;">Plant #1 Online</strong>
+              <span style="color:#cbd5e1; font-size:11px;">4/5 Lines Active</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-[18px]" style="color:var(--color-outline-variant);">sensors</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Backdrop -->
+    <div class="sidebar-backdrop"></div>
+
+    <!-- Main Wrapper -->
+    <div class="app-main-wrapper">
+      <!-- Fixed Top Navigation Bar -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="btn-mobile-menu" id="mobileMenuBtn">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+          <div class="topbar-selector" onclick="location.hash='#/settings'">
+            <span class="material-symbols-outlined text-primary text-[18px]">factory</span>
+            <div style="display:flex; flex-direction:column; line-height:1.1;">
+              <span style="font-size:10px; color:var(--color-outline); text-transform:uppercase; font-weight:600;">Active Plant</span>
+              <strong style="font-size:12px;">Unit 1: Sanand Estate, Ahmedabad</strong>
+            </div>
+            <span class="material-symbols-outlined text-[18px] text-muted">expand_more</span>
+          </div>
+          <div class="topbar-selector">
+            <span class="material-symbols-outlined text-tertiary text-[18px]">calendar_today</span>
+            <strong style="font-size:12px;">FY 2025-26</strong>
+          </div>
+        </div>
+
+        <div class="topbar-center">
+          <div class="global-search-container" onclick="PackFlowApp.openGlobalSearch()">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" class="global-search-input" placeholder="Search customers, SO#, Job cards, Reel ID, Invoices... [Ctrl+K]" readonly>
+            <span class="search-shortcut-kbd">Ctrl+K</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="btn-quick-new" onclick="PackFlowApp.openQuickCreateMenu()">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            <span>New</span>
+            <span class="material-symbols-outlined text-[16px]">expand_more</span>
+          </button>
+
+          <div class="role-badge-selector" onclick="PackFlowApp.openQuickCreateMenu()" title="Current Operational Role">
+            <span class="material-symbols-outlined text-[14px]">shield_person</span>
+            <span id="currentRoleDisplay">VP Operations</span>
+          </div>
+
+          <a href="#/approvals" class="topbar-icon-btn" title="Pending Approvals">
+            <span class="material-symbols-outlined">assignment_turned_in</span>
+            <span class="icon-badge bg-primary" id="topbarApprovalsBadge">4</span>
+          </a>
+
+          <button class="topbar-icon-btn" title="System Notifications" onclick="PackFlowComponents.showToast('All machines and line telemetry normal. 4 approvals pending.', 'info')">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="icon-badge bg-error">3</span>
+          </button>
+
+          <div class="topbar-user" onclick="location.hash='#/settings'">
+            <div class="user-avatar">RP</div>
+            <div class="user-meta">
+              <span class="user-name">Rajesh Patel</span>
+              <span class="user-role">VP Operations</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Dynamic Content Workspace -->
+      <main class="app-main" id="appMainContent">
+        <!-- Route views dynamically rendered here by router.js -->
+      </main>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules (Pure Vanilla JS, Native Browser APIs, Zero Node/Frameworks) -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/calculations.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/sales.js"></script>
+  <script src="js/pages/production.js"></script>
+  <script src="js/pages/inventory.js"></script>
+  <script src="js/pages/procurement_quality_dispatch.js"></script>
+  <script src="js/pages/finance.js"></script>
+  <script src="js/pages/people_maintenance.js"></script>
+  <script src="js/pages/reports_admin.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
