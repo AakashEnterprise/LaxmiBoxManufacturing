@@ -1,0 +1,189 @@
+/* ==========================================================================
+   PackFlow ERP - Forms & Input Controls
+   ========================================================================== */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.form-label {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-on-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: var(--color-error);
+}
+
+.form-helper {
+  font-size: var(--font-size-xs);
+  color: var(--color-outline);
+}
+
+.form-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+/* Base Input Styles */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+input[type="tel"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  height: 38px;
+  padding: 0 var(--space-md);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-lg);
+  background-color: #ffffff;
+  color: var(--color-on-surface);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  transition: all 0.15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--color-surface-container-low);
+  color: var(--color-outline);
+  cursor: not-allowed;
+}
+
+/* Number inputs with unit tags */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-suffix {
+  position: absolute;
+  right: 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-outline);
+  pointer-events: none;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: var(--font-size-md);
+  color: var(--color-outline);
+  pointer-events: none;
+}
+
+.input-group input.has-prefix {
+  padding-left: 28px;
+}
+
+.input-group input.has-suffix {
+  padding-right: 48px;
+}
+
+textarea {
+  height: auto;
+  min-height: 80px;
+  padding: var(--space-sm) var(--space-md);
+  resize: vertical;
+}
+
+/* Form Grids */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Checkbox and Radio */
+.checkbox-label,
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-md);
+  color: var(--color-on-surface);
+  cursor: pointer;
+  user-select: none;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* Dynamic Line Item Table in Forms */
+.line-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-md);
+}
+
+.line-items-table th {
+  background-color: var(--color-surface-container-low);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-outline);
+  border: 1px solid var(--color-surface-container);
+  text-align: left;
+}
+
+.line-items-table td {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-surface-container);
+  vertical-align: middle;
+}
+
+.line-items-table td input,
+.line-items-table td select {
+  height: 32px;
+  font-size: var(--font-size-sm);
+}

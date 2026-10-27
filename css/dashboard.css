@@ -1,0 +1,230 @@
+/* ==========================================================================
+   PackFlow ERP - Operational Cockpit & Dashboard Styles
+   ========================================================================== */
+
+/* 10 Enterprise KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.kpi-card {
+  background-color: var(--color-surface-container-lowest);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border: var(--border-structural);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  min-height: 110px;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-outline);
+}
+
+.kpi-value {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-on-surface);
+  line-height: 1.2;
+  margin: 6px 0 2px 0;
+}
+
+.kpi-subtext {
+  font-size: var(--font-size-sm);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kpi-progress {
+  width: 100%;
+  height: 5px;
+  background-color: var(--color-surface-container);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.kpi-progress-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+/* Machine Telemetry Grid */
+.machine-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: var(--space-md);
+}
+
+.machine-card {
+  background-color: var(--color-surface-container-low);
+  border: var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.machine-card:hover {
+  background-color: var(--color-surface-container);
+}
+
+.machine-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.machine-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+.machine-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.machine-speed-gauge {
+  background-color: #ffffff;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: var(--border-structural);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: var(--space-sm) 0;
+}
+
+.machine-speed-val {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.machine-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.machine-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Kanban Production Routing Board */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-md);
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+}
+
+.kanban-col {
+  background-color: var(--color-surface-container-low);
+  border: var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  gap: var(--space-sm);
+}
+
+.kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  color: var(--color-on-surface);
+}
+
+.kanban-job-card {
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-xs);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kanban-job-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+/* Deckle Slitting Visualizer Bar */
+.deckle-visual-bar {
+  display: flex;
+  height: 38px;
+  background-color: var(--color-surface-container);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  padding: 3px;
+  gap: 3px;
+}
+
+.deckle-slit-cut {
+  flex: 1;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+}
+
+.deckle-trim-waste {
+  width: 50px;
+  background-color: var(--color-error);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+}
