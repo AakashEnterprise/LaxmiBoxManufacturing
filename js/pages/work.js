@@ -1,0 +1,12 @@
+(function () {
+  const { qtyFmt, dateFmt, daysBetween, todayStr } = Calc; const h = UI.h; const P = App.pages;
+  P.work = () => { const t = todayStr(); const open = App.core.listOrders().filter(o => ['New', 'Making'].includes(o.status)); const all = App.core.listWork(); const cols = PF.STAGES.filter(s => s !== 'Ready'); const today = all.filter(w => w.date === t).reduce((a, w) => a + w.good_qty, 0);
+    return UI.head("Today's Work", "See where every order is in the factory. Press the button to record how many boxes were finished today - paper stock reduces by itself.", '<button class="btn primary" data-act="work.add">+ Add today\'s work</button>') +
+      `<div class="note green">Boxes finished today: <b>${qtyFmt(today)}</b></div>` + (open.length === 0 ? UI.empty('🏭', 'No orders are being made right now.') :
+      `<div class="kanban">${cols.map(s => `<div class="kcol"><h3>${s} (${open.filter(o => o.stage === s).length})</h3>${open.filter(o => o.stage === s).map(o => { const d = daysBetween(t, o.due_date);
+        return `<div class="kcard"><b>${h(o.no)}</b><div>${h(o.customer)}</div><div class="small">${qtyFmt(o.produced)}/${qtyFmt(o.qty)} · ${o.length}×${o.width}×${o.height}</div><div class="small${d < 0 ? ' late' : ''}">${d < 0 ? -d + ' days late' : 'due ' + dateFmt(o.due_date)}</div>
+        <div class="row" style="margin-top:6px"><button class="btn sm" ${PF.STAGES.indexOf(o.stage) === 0 ? 'disabled' : ''} data-act="work.move" data-id="${o.id}" data-dir="-1" aria-label="Move back">←</button><button class="btn sm primary" data-act="work.addfor" data-id="${o.id}">+ Work</button><button class="btn sm" data-act="work.move" data-id="${o.id}" data-dir="1" aria-label="Move forward">→</button></div></div>`; }).join('')}</div>`).join('')}</div>`) +
+      `<div class="card" style="margin-top:16px"><h2>Recent work</h2>${UI.table([{ h: 'Date', f: r => dateFmt(r.date) }, { h: 'Order', f: r => h(`${r.order_no} · ${r.customer}`) }, { h: 'Good', r: 1, f: r => qtyFmt(r.good_qty) }, { h: 'Spoiled', r: 1, f: r => qtyFmt(r.waste_qty) }, { h: 'Step', f: r => h(r.stage) }, { h: 'Note', f: r => h(r.note) }], all.slice(0, 40), { empty: '<p class="small">Nothing recorded yet.</p>' })}</div>`; };
+  UI.on('work.add', () => Forms.work()); UI.on('work.addfor', d => Forms.work(Number(d.id)));
+  UI.on('work.move', d => { const o = App.core.getOrder(Number(d.id)); const i = PF.STAGES.indexOf(o.stage) + Number(d.dir); if (i >= 0 && i < PF.STAGES.length - 1) App.act(() => App.core.setStage(o.id, PF.STAGES[i])); });
+})();

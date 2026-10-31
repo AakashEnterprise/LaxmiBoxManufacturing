@@ -1,0 +1,37 @@
+// Loads the same plain scripts the browser uses, then runs the business-rule tests.
+const fs = require('fs'), vm = require('vm'), path = require('path'), assert = require('assert/strict');
+globalThis.window = globalThis;
+for (const f of ['calc.js', 'core.js']) vm.runInThisContext(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8'), { filename: f });
+const initSqlJs = require('./sqljs-node.cjs');
+const { createCore, CoreError } = window.PF; const { costBox, QUALITIES, gstSplit, bestDeckle, financialYear, rupeesInWords, addDays, todayStr } = window.Calc;
+(async () => {
+const SQL = await initSqlJs(); const c = createCore(SQL, null, null);
+const throwsMsg = (fn, re) => { try { fn(); } catch (e) { assert.ok(e instanceof CoreError, 'not CoreError: ' + e.stack); assert.match(e.message, re); return; } assert.fail('expected error ' + re); };
+let n = 0; const t = (name, fn) => { fn(); n++; console.log('ok -', name); };
+t('GST split', () => { assert.deepEqual(gstSplit(1000, 5, false), { cgst: 25, sgst: 25, igst: 0, tax: 50, total: 1050 }); assert.equal(gstSplit(1000, 5, true).igst, 50); });
+t('financial year', () => { assert.equal(financialYear('2026-03-31'), '2025-26'); assert.equal(financialYear('2026-04-01'), '2026-27'); });
+t('deckle + words', () => { assert.ok(bestDeckle(620, [1000, 1200, 1400, 1800]).ups >= 1); assert.equal(bestDeckle(3000, [1000]), null); assert.equal(rupeesInWords(125750), 'One Lakh Twenty Five Thousand Seven Hundred Fifty Rupees Only'); });
+t('costing sanity', () => { const r = costBox({ length: 450, width: 300, height: 280, recipe: QUALITIES.strong5.recipe, quantity: 10000, paperRate: 42, conversionCost: 4.5, colours: 2, printRatePerColour: 0.35, wastagePct: 4, marginPct: 15, oneTimeCost: 0, transportPerBox: 0, glue: 45, trim: 20, deckles: [1000, 1200, 1400, 1600, 1800, 2000] });
+  assert.equal(r.sheetL, 1545); assert.ok(r.kgPerBox > 0.6 && r.kgPerBox < 1.2); assert.ok(Math.abs(r.realMargin - 15) < 0.6); });
+c.setSettings({ company_state_code: '24', company_gstin: '24AAACL1234F1Z5' });
+const cust = c.saveCustomer({ name: 'Sunrise Foods', gstin: '24AAACS1234F1Z5', credit_limit: 100000, pay_days: 30 }); const custOut = c.saveCustomer({ name: 'Delhi Traders', gstin: '07AAACD1234F1Z5' });
+t('customer validation', () => { throwsMsg(() => c.saveCustomer({ name: 'sunrise foods' }), /already exists/); throwsMsg(() => c.saveCustomer({ name: 'Bad', gstin: '123' }), /GSTIN/); });
+['Liner|150', 'Fluting|120'].forEach(s => { const [k, g] = s.split('|'); c.saveStockItem({ kind: k, gsm: Number(g), min_kg: 500 }); });
+const L150 = c.listStock().find(s => s.kind === 'Liner'), F120 = c.listStock().find(s => s.kind === 'Fluting'); c.adjustStock(L150.id, 2000); c.adjustStock(F120.id, 1500);
+const qi = { customer_id: cust, box_name: 'Shipper', length: 400, width: 280, height: 250, quality: 'std3', quantity: 5000, recipe: QUALITIES.std3.recipe, colours: 1 }; let qid, oid, inv;
+t('quote', () => { throwsMsg(() => c.saveQuote({ ...qi, length: 0 }), /Length, Width and Height/); throwsMsg(() => c.saveQuote({ ...qi, length: 45000 }), /millimetres/); qid = c.saveQuote(qi); assert.match(c.listQuotes()[0].no, /^QT\/2026-27\/0001$/); assert.equal(c.listQuotes()[0].gst_rate, 5); });
+t('order + credit guard', () => { throwsMsg(() => c.orderFromQuote(qid, addDays(todayStr(), -1), ''), /past/); const q = c.listQuotes()[0]; if (q.unit_price * q.qty * 1.05 > 100000) throwsMsg(() => c.orderFromQuote(qid, addDays(todayStr(), 10), 'P'), /CREDIT_LIMIT/);
+  c.saveCustomer({ id: cust, name: 'Sunrise Foods', gstin: '24AAACS1234F1Z5', credit_limit: 0 }); oid = c.orderFromQuote(qid, addDays(todayStr(), 10), 'PO1'); throwsMsg(() => c.orderFromQuote(qid, addDays(todayStr(), 10), ''), /already became/); });
+t('paper check + production deducts paper', () => { assert.equal(c.paperCheck(oid).length, 2); const b = L150 && c.listStock().find(s => s.id === L150.id).kg; c.addWork({ order_id: oid, good: 2000, waste: 50, stage: 'Printing' }); assert.ok(c.listStock().find(s => s.id === L150.id).kg < b); assert.equal(c.getOrder(oid).status, 'Making');
+  throwsMsg(() => c.addWork({ order_id: oid, good: 4000, waste: 0 }), /only for 5000/); });
+t('delivery rules', () => { throwsMsg(() => c.addDelivery({ order_id: oid, qty: 3000, vehicle: 'GJ01', eway: '1' }), /Only 2000 boxes/); throwsMsg(() => c.addDelivery({ order_id: oid, qty: 2000, vehicle: 'gj01ab1234' }), /EWAY/); c.addDelivery({ order_id: oid, qty: 2000, vehicle: 'gj01ab1234', eway: '123456789012' }); assert.equal(c.getOrder(oid).delivered, 2000); });
+t('billing GST 5% CGST/SGST', () => { throwsMsg(() => c.createInvoice({ order_id: oid, qty: 2500 }), /only 2000/); inv = c.createInvoice({ order_id: oid, qty: 2000 }); const i = c.listInvoices()[0]; assert.equal(i.gst_rate, 5); assert.ok(i.cgst > 0 && i.igst === 0); assert.match(i.no, /^INV\/2026-27\/0001$/); });
+t('payments + advance auto-apply', () => { const total = c.listInvoices()[0].total; c.addPayment({ customer_id: cust, amount: 1000, mode: 'UPI', invoice_id: inv }); assert.equal(c.listInvoices()[0].status, 'Part paid'); c.addPayment({ customer_id: cust, amount: total, mode: 'Cheque' }); assert.equal(c.listInvoices()[0].status, 'Paid'); assert.equal(Math.round(c.listPayments()[0].advance), 1000);
+  c.addWork({ order_id: oid, good: 1000, waste: 0 }); c.addDelivery({ order_id: oid, qty: 1000, vehicle: 'GJ01ZZ0001', eway: '999999999999' }); const i2 = c.createInvoice({ order_id: oid, qty: 1000 }); assert.ok(c.listInvoices().find(x => x.id === i2).paid >= 999.99); });
+t('inter-state IGST', () => { const q2 = c.saveQuote({ ...qi, customer_id: custOut, quantity: 100 }); const o2 = c.orderFromQuote(q2, addDays(todayStr(), 5), ''); c.addWork({ order_id: o2, good: 100, waste: 0 }); c.addDelivery({ order_id: o2, qty: 100, vehicle: 'DL01AA1111' }); c.createInvoice({ order_id: o2, qty: 100 }); const i = c.listInvoices()[0]; assert.ok(i.igst > 0 && i.cgst === 0); });
+t('cancel rules + numbers never reused', () => { throwsMsg(() => c.cancelOrder(oid), /already delivered/); throwsMsg(() => c.cancelInvoice(c.listInvoices().find(x => x.id === inv).id), /Payment was already received/); throwsMsg(() => c.archiveCustomer(cust), /pending money|Settle/);
+  const last = c.listInvoices()[0]; c.cancelInvoice(last.id); const q3 = c.saveQuote({ ...qi, customer_id: custOut, quantity: 50 }); const o3 = c.orderFromQuote(q3, addDays(todayStr(), 5), ''); c.addWork({ order_id: o3, good: 50, waste: 0 }); c.addDelivery({ order_id: o3, qty: 50, vehicle: 'DL01AA1112' }); c.createInvoice({ order_id: o3, qty: 50 }); assert.notEqual(c.listInvoices()[0].no, last.no); });
+t('purchases', () => { const s = c.saveSupplier({ name: 'Mill Co' }); const b = c.listStock().find(x => x.id === L150.id).kg; const pid = c.addPurchase({ supplier_id: s, item_id: L150.id, kg: 1000, rate: 41 }); c.receivePurchase(pid); assert.equal(c.listStock().find(x => x.id === L150.id).kg, b + 1000); throwsMsg(() => c.receivePurchase(pid), /cannot be received/); });
+t('home + reports + backup reload', () => { assert.ok(Array.isArray(c.home().attention)); assert.ok(c.reports().months.length >= 1); const bytes = c.exportBytes(); assert.equal(Buffer.from(bytes).slice(0, 15).toString(), 'SQLite format 3'); assert.equal(createCore(SQL, bytes, null).listCustomers().length, 2); });
+console.log(`\n${n + 2} test groups passed`);
+})().catch(e => { console.error(e); process.exit(1); });

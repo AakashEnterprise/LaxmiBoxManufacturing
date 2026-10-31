@@ -1,342 +1,73 @@
-/**
- * PackFlow ERP - Application Bootstrapper & Master Orchestrator
- * Wires Store, Router, Page Controllers, Global Search, and Event Listeners.
- */
+// App shell (NO login): navigation (expand/collapse sidebar + mobile drawer), text size, page routing.
+(function () {
+  const h = UI.h;
+  const NAV = [['home', '🏠', 'Home'], ['quotes', '🧮', 'Price Quote'], ['orders', '📦', 'Orders'], ['work', '🏭', "Today's Work"], ['stock', '📜', 'Paper Stock'], ['buy', '🛒', 'Buy Paper'], ['deliveries', '🚚', 'Deliveries'], ['bills', '🧾', 'Bills & Money In'], ['customers', '👥', 'Customers'], ['money', '📊', 'Reports & Expenses'], ['settings', '⚙️', 'Settings']];
+  const MOBILE_Q = '(max-width: 1023px)';
+  const SIZES = [['s', 'Small'], ['m', 'Normal'], ['l', 'Large'], ['xl', 'Extra large']];
+  const App = window.App = { pages: {}, core: null, cur: 'home', arg: null };
 
-window.PackFlowApp = {
-  currentRole: "VP Operations",
-  activePlant: "Unit 1: Sanand Estate, Ahmedabad",
+  // ---- tiny storage helper: works even if the browser blocks localStorage ----
+  const mem = {}; const sget = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? (mem[k] ?? d) : v; } catch { return mem[k] ?? d; } };
+  const sset = (k, v) => { mem[k] = v; try { localStorage.setItem(k, v); } catch {} };
+  const isMobile = () => (window.matchMedia ? window.matchMedia(MOBILE_Q).matches : window.innerWidth < 1024);
 
-  init() {
-    this.registerRoutes();
-    this.setupEventListeners();
-    this.setupStoreSubscription();
-    window.PackFlowRouter.init();
-    this.updateBadges();
-  },
+  // ---- TEXT SIZE (whole app scales because every size is in rem) ----
+  App.size = {
+    get: () => (SIZES.some(s => s[0] === sget('pf_size', 'm')) ? sget('pf_size', 'm') : 'm'),
+    set(k) { sset('pf_size', k); document.documentElement.dataset.size = k; const l = SIZES.find(s => s[0] === k)[1]; UI.$$('.size-lbl').forEach(e => { e.textContent = l; }); },
+    cycle() { const i = SIZES.findIndex(s => s[0] === App.size.get()); App.size.set(SIZES[(i + 1) % SIZES.length][0]); },
+    list: SIZES
+  };
+  document.documentElement.dataset.size = App.size.get();
 
-  registerRoutes() {
-    const r = window.PackFlowRouter;
-    const p = window.PackFlowPages;
-
-    // Overview
-    r.register("/dashboard", () => p.dashboard.renderExecutiveDashboard());
-    r.register("/factory", () => p.dashboard.renderFactoryLive());
-    r.register("/approvals", () => p.reportsAdmin.renderApprovalsInbox());
-
-    // Sales & CRM
-    r.register("/customers", () => p.sales.renderCustomers());
-    r.register("/customers/:id", (params) => p.sales.renderCustomerDetail(params.id));
-    r.register("/quotations", () => p.sales.renderQuotationCalculator());
-    r.register("/quotations/new", (params, query) => {
-      let cust = "";
-      if (query && query.includes("customer=")) {
-        cust = decodeURIComponent(query.split("customer=")[1].split("&")[0]);
-      }
-      return p.sales.renderQuotationCalculator(cust);
-    });
-    r.register("/sales-orders", () => p.sales.renderSalesOrders());
-    r.register("/sales-orders/:id", (params) => {
-      const html = p.sales.renderSalesOrders();
-      setTimeout(() => p.sales.openSODrawer(params.id), 50);
-      return html;
-    });
-    r.register("/products", () => p.sales.renderBoxSpecifications());
-
-    // Production & Shop Floor
-    r.register("/production/planning", () => p.dashboard.renderFactoryLive());
-    r.register("/production/jobs", () => p.production.renderJobCards());
-    r.register("/production/jobs/:id", (params) => {
-      const html = p.production.renderJobCards();
-      setTimeout(() => p.production.openLogOutputModal(params.id), 50);
-      return html;
-    });
-    r.register("/mrp", () => p.production.renderMRP());
-
-    // Inventory & Paper Store
-    r.register("/inventory/reels", () => p.inventory.renderReelInventory());
-    r.register("/inventory/deckle", () => p.inventory.renderReelInventory());
-    r.register("/inventory/fg", () => p.inventory.renderFGWarehouse());
-
-    // Procurement
-    r.register("/procurement", () => p.procurement.renderProcurement());
-    r.register("/procurement/new", () => {
-      const html = p.procurement.renderProcurement();
-      setTimeout(() => p.procurement.openNewPOModal(), 50);
-      return html;
-    });
-
-    // Quality Control
-    r.register("/quality", () => p.quality.renderQuality());
-
-    // Dispatch & Logistics
-    r.register("/dispatch", () => p.dispatch.renderDispatch());
-    r.register("/dispatch/new", (params, query) => {
-      const html = p.dispatch.renderDispatch();
-      let soId = "";
-      if (query && query.includes("so=")) {
-        soId = decodeURIComponent(query.split("so=")[1].split("&")[0]);
-      }
-      setTimeout(() => p.dispatch.openNewDispatchModal(soId), 50);
-      return html;
-    });
-
-    // Finance & Profitability
-    r.register("/finance", () => p.finance.renderFinanceDashboard());
-    r.register("/finance/invoices", () => p.finance.renderFinanceDashboard());
-    r.register("/finance/invoices/new", (params, query) => {
-      const html = p.finance.renderFinanceDashboard();
-      let soId = "";
-      if (query && query.includes("so=")) {
-        soId = decodeURIComponent(query.split("so=")[1].split("&")[0]);
-      }
-      setTimeout(() => p.finance.openNewInvoiceModal(soId), 50);
-      return html;
-    });
-    r.register("/finance/receivables", () => p.finance.renderFinanceDashboard());
-
-    // People, Maintenance, Waste
-    r.register("/people", () => p.people.renderEmployees());
-    r.register("/maintenance", () => p.maintenance.renderMaintenance());
-    r.register("/waste", () => p.waste.renderWaste());
-
-    // Reports & Administration
-    r.register("/reports", () => p.reportsAdmin.renderReports());
-    r.register("/documents", () => p.reportsAdmin.renderDocuments());
-    r.register("/settings", () => p.reportsAdmin.renderSettings());
-
-    // Portals
-    r.register("/portal/customer", () => p.reportsAdmin.renderCustomerPortal());
-    r.register("/portal/supplier", () => p.reportsAdmin.renderSupplierPortal());
-  },
-
-  setupEventListeners() {
-    // Global Keyboard Shortcuts (Ctrl+K for search, Escape for closing modals/drawers)
-    window.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        this.openGlobalSearch();
-      } else if (e.key === "Escape") {
-        window.PackFlowComponents.closeModal();
-        window.PackFlowComponents.closeDrawer();
-      }
-    });
-
-    // Sidebar Collapse Toggle
-    const toggleBtn = document.getElementById("sidebarToggleBtn");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
-        document.querySelector(".app-sidebar")?.classList.toggle("collapsed");
-      });
-    }
-
-    // Mobile Menu Toggle
-    const mobileBtn = document.getElementById("mobileMenuBtn");
-    const backdrop = document.querySelector(".sidebar-backdrop");
-    if (mobileBtn) {
-      mobileBtn.addEventListener("click", () => {
-        document.querySelector(".app-sidebar")?.classList.add("mobile-open");
-        backdrop?.classList.add("mobile-open");
-      });
-    }
-    if (backdrop) {
-      backdrop.addEventListener("click", () => {
-        document.querySelector(".app-sidebar")?.classList.remove("mobile-open");
-        backdrop.classList.remove("mobile-open");
-      });
-    }
-  },
-
-  setupStoreSubscription() {
-    window.PackFlowStore.subscribe(() => {
-      this.updateBadges();
-      // Re-render current page
-      window.PackFlowRouter.handleRoute();
-    });
-  },
-
-  updateBadges() {
-    const metrics = window.PackFlowStore.getMetrics();
-    const apprBadge = document.getElementById("sidebarApprovalsBadge");
-    if (apprBadge) {
-      apprBadge.textContent = metrics.pendingApprovalsCount;
-      apprBadge.style.display = metrics.pendingApprovalsCount > 0 ? "" : "none";
-    }
-
-    const topbarApprBadge = document.getElementById("topbarApprovalsBadge");
-    if (topbarApprBadge) {
-      topbarApprBadge.textContent = metrics.pendingApprovalsCount;
-      topbarApprBadge.style.display = metrics.pendingApprovalsCount > 0 ? "" : "none";
-    }
-
-    const jobsBadge = document.getElementById("sidebarJobsBadge");
-    if (jobsBadge) {
-      jobsBadge.textContent = window.PackFlowStore.state.jobs.length;
-    }
-  },
-
-  switchRole(newRole) {
-    this.currentRole = newRole;
-    const roleElem = document.getElementById("currentRoleDisplay");
-    if (roleElem) roleElem.textContent = newRole;
-    window.PackFlowComponents.showToast(`Switched operational view to: ${newRole}`, "info");
-  },
-
-  // Global Quick Create Menu
-  openQuickCreateMenu() {
-    window.PackFlowComponents.openModal({
-      title: "Quick Operation Launcher",
-      size: "modal-md",
-      bodyHtml: `
-        <div class="grid grid-cols-2 gap-sm">
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); PackFlowPages.sales.openNewCustomerModal();">
-            <span class="material-symbols-outlined text-primary text-[24px]">add_business</span>
-            <div style="text-align:left;">
-              <strong class="block">New Customer</strong>
-              <span class="text-body-sm text-muted">Register account</span>
-            </div>
-          </button>
-
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); location.hash='#/quotations/new';">
-            <span class="material-symbols-outlined text-secondary text-[24px]">calculate</span>
-            <div style="text-align:left;">
-              <strong class="block">Box Quotation</strong>
-              <span class="text-body-sm text-muted">Costing calculator</span>
-            </div>
-          </button>
-
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); PackFlowPages.production.openNewJobModal();">
-            <span class="material-symbols-outlined text-primary text-[24px]">add_task</span>
-            <div style="text-align:left;">
-              <strong class="block">Job Card</strong>
-              <span class="text-body-sm text-muted">Issue work order</span>
-            </div>
-          </button>
-
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); PackFlowPages.inventory.openInwardReelModal();">
-            <span class="material-symbols-outlined text-tertiary text-[24px]">album</span>
-            <div style="text-align:left;">
-              <strong class="block">Inward Reel</strong>
-              <span class="text-body-sm text-muted">Weighbridge GRN</span>
-            </div>
-          </button>
-
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); PackFlowPages.finance.openNewPaymentModal();">
-            <span class="material-symbols-outlined text-secondary text-[24px]">payments</span>
-            <div style="text-align:left;">
-              <strong class="block">Payment Receipt</strong>
-              <span class="text-body-sm text-muted">Record remittance</span>
-            </div>
-          </button>
-
-          <button class="btn btn-outline" style="height:54px; justify-content:flex-start;" onclick="PackFlowComponents.closeModal(); PackFlowPages.dispatch.openNewDispatchModal();">
-            <span class="material-symbols-outlined text-primary text-[24px]">local_shipping</span>
-            <div style="text-align:left;">
-              <strong class="block">Delivery Challan</strong>
-              <span class="text-body-sm text-muted">Gate pass & E-way</span>
-            </div>
-          </button>
-        </div>
-      `,
-      footerHtml: `<button class="btn btn-outline" onclick="PackFlowComponents.closeModal()">Close</button>`
-    });
-  },
-
-  // Global Search Across Master State
-  openGlobalSearch() {
-    window.PackFlowComponents.openModal({
-      title: "Global Enterprise Search [Ctrl+K]",
-      size: "modal-lg",
-      bodyHtml: `
-        <div class="form-group" style="margin-bottom:16px;">
-          <input type="text" id="modalGlobalSearchInput" placeholder="Search orders, customers, job cards, reels, invoices, or dies..." autofocus onkeyup="PackFlowApp.executeGlobalSearch(this.value)">
-        </div>
-        <div id="globalSearchResultsContainer" class="flex flex-col gap-sm" style="max-height:420px; overflow-y:auto;">
-          <div class="text-center text-muted text-body-sm" style="padding:20px;">
-            Type at least 2 characters to search across live ERP state.
-          </div>
-        </div>
-      `,
-      footerHtml: `<button class="btn btn-outline" onclick="PackFlowComponents.closeModal()">Close</button>`
-    });
-
-    setTimeout(() => {
-      document.getElementById("modalGlobalSearchInput")?.focus();
-    }, 100);
-  },
-
-  executeGlobalSearch(query) {
-    const q = (query || "").trim().toLowerCase();
-    const container = document.getElementById("globalSearchResultsContainer");
-    if (!container) return;
-
-    if (q.length < 2) {
-      container.innerHTML = `<div class="text-center text-muted text-body-sm" style="padding:20px;">Type at least 2 characters to search...</div>`;
-      return;
-    }
-
-    const state = window.PackFlowStore.state;
-    const results = [];
-
-    // Search Customers
-    state.customers.forEach(c => {
-      if (c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.gstin.toLowerCase().includes(q)) {
-        results.push({ type: "Customer", title: c.name, meta: `${c.code} • ${c.city} • GST: ${c.gstin}`, hash: `#/customers/${c.id}`, icon: "business" });
-      }
-    });
-
-    // Search Sales Orders
-    state.salesOrders.forEach(so => {
-      if (so.id.toLowerCase().includes(q) || so.customer.toLowerCase().includes(q) || so.productName.toLowerCase().includes(q)) {
-        results.push({ type: "Sales Order", title: `${so.id} • ${so.customer}`, meta: `${so.productName} (${so.orderedQty.toLocaleString()} Pcs)`, hash: `#/sales-orders/${so.id}`, icon: "receipt_long" });
-      }
-    });
-
-    // Search Jobs
-    state.jobs.forEach(j => {
-      if (j.id.toLowerCase().includes(q) || j.customer.toLowerCase().includes(q)) {
-        results.push({ type: "Job Card", title: `${j.id} • ${j.productName}`, meta: `${j.workCenter} • Output: ${j.producedQty.toLocaleString()} / ${j.plannedQty.toLocaleString()}`, hash: `#/production/jobs/${j.id}`, icon: "precision_manufacturing" });
-      }
-    });
-
-    // Search Paper Reels
-    state.reels.forEach(r => {
-      if (r.id.toLowerCase().includes(q) || r.paperGrade.toLowerCase().includes(q) || r.mill.toLowerCase().includes(q)) {
-        results.push({ type: "Paper Reel", title: `${r.id} (${r.paperGrade})`, meta: `${r.gsm} GSM • Deckle ${r.deckleMm}mm • ${r.netWeightKg} kg • ${r.warehouseBay}`, hash: `#/inventory/reels`, icon: "album" });
-      }
-    });
-
-    // Search Invoices
-    state.invoices.forEach(i => {
-      if (i.id.toLowerCase().includes(q) || i.customer.toLowerCase().includes(q)) {
-        results.push({ type: "Tax Invoice", title: `${i.id} • ${i.customer}`, meta: `Total: ${window.PackFlowCalc.formatCurrency(i.totalAmount)} • Status: ${i.status}`, hash: `#/finance`, icon: "receipt" });
-      }
-    });
-
-    if (results.length === 0) {
-      container.innerHTML = `<div class="text-center text-muted text-body-sm" style="padding:20px;">No matching records found for "${query}"</div>`;
-      return;
-    }
-
-    container.innerHTML = results.map(res => `
-      <div style="background:var(--color-surface-container-low); padding:10px 14px; border-radius:var(--radius-lg); display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="PackFlowComponents.closeModal(); location.hash='${res.hash}';">
-        <div class="flex items-center gap-sm">
-          <span class="material-symbols-outlined text-primary text-[20px]">${res.icon}</span>
-          <div>
-            <div class="flex items-center gap-xs">
-              <span class="spec-chip">${res.type}</span>
-              <strong class="text-body-md">${res.title}</strong>
-            </div>
-            <div class="text-body-sm text-muted">${res.meta}</div>
-          </div>
-        </div>
-        <span class="material-symbols-outlined text-muted text-[18px]">arrow_forward</span>
-      </div>
-    `).join("");
+  // ---- NAVIGATION: ONE source of truth. Desktop = 'pf_nav_collapsed'. Mobile = body.nav-open. Every change goes through applyNav(). ----
+  function applyNav() {
+    const b = document.body, mobile = isMobile(), collapsed = !mobile && sget('pf_nav_collapsed', '0') === '1';
+    b.classList.toggle('nav-collapsed', collapsed); if (!mobile) b.classList.remove('nav-open');
+    const open = b.classList.contains('nav-open');
+    const burger = UI.$('[data-act="nav.toggle"]'); if (burger) { burger.setAttribute('aria-expanded', String(open)); burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); }
+    const col = UI.$('[data-act="nav.collapse"]'); if (col) { col.setAttribute('aria-expanded', String(!collapsed)); col.title = collapsed ? 'Expand menu' : 'Collapse menu'; col.querySelector('.ic').textContent = collapsed ? '»' : '«'; }
+    const side = UI.$('#side'); if (side) side.setAttribute('aria-hidden', String(mobile && !open));
   }
-};
+  App.nav = {
+    toggleDrawer(force) { const b = document.body; const want = force === undefined ? !b.classList.contains('nav-open') : force; b.classList.toggle('nav-open', want && isMobile()); applyNav(); if (b.classList.contains('nav-open')) { const f = UI.$('#side .nav.on') || UI.$('#side .nav'); f && f.focus(); } },
+    toggleCollapse() { sset('pf_nav_collapsed', sget('pf_nav_collapsed', '0') === '1' ? '0' : '1'); applyNav(); }
+  };
+  UI.on('nav.toggle', () => App.nav.toggleDrawer()); UI.on('nav.close', () => App.nav.toggleDrawer(false)); UI.on('nav.collapse', () => App.nav.toggleCollapse()); UI.on('nav.go', d => App.go(d.id)); UI.on('size.cycle', () => App.size.cycle());
+  UI.on('size.set', d => { App.size.set(d.id); App.render(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('nav-open') && !UI.$('.overlay')) App.nav.toggleDrawer(false); });
+  if (window.matchMedia) { const mq = window.matchMedia(MOBILE_Q); (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(applyNav); }
+  window.addEventListener('resize', applyNav); window.addEventListener('orientationchange', applyNav);
 
-// Initialize when DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-  window.PackFlowApp.init();
-});
+  // ---- page handling ----
+  App.render = function () { const m = UI.$('#main'); if (!m) return; const top = m.scrollTop; const fn = App.pages[App.cur] || App.pages.home; m.innerHTML = '<div class="page">' + fn(App.arg) + '</div>'; App.arg = null; m.scrollTop = top; setActive(); };
+  App.go = function (name, arg) { App.cur = name; App.arg = arg || null; UI.closeAll(); document.body.classList.remove('nav-open'); App.render(); const m = UI.$('#main'); if (m) m.scrollTop = 0; applyNav(); };
+  App.refresh = function () { UI.redrawModals(); App.render(); };
+  App.act = function (fn, ok) { try { const r = fn(); App.refresh(); if (ok) UI.toast(ok); return r === undefined ? true : r; } catch (e) { UI.toast(e instanceof PF.CoreError ? e.message : 'Something went wrong: ' + e.message, 'err'); return false; } };
+  function setActive() { UI.$$('#side .nav[data-id]').forEach(b => { const on = b.dataset.id === App.cur; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    const red = App.core.home().attention.filter(a => a.level === 'red').length; const d = UI.$('#side .nav[data-id="home"] .dot'); if (d) { d.textContent = red; d.hidden = !red; }
+    const s = App.core.getSettings(); UI.$$('.co-name').forEach(e => { e.textContent = s.company_name; }); document.title = s.company_name + ' - PackFlow'; }
+  window.addEventListener('error', e => { if (App.core) UI.toast('Something went wrong: ' + e.message, 'err'); });
+
+  function shell() {
+    const lbl = SIZES.find(s => s[0] === App.size.get())[1];
+    document.getElementById('app').innerHTML = `<div class="shell"><header class="topbar"><button class="iconbtn" data-act="nav.toggle" aria-controls="side" aria-expanded="false" aria-label="Open menu">☰</button><span class="tbrand">📦 <span class="co-name"></span></span><button class="iconbtn sizebtn" data-act="size.cycle" aria-label="Change text size" title="Text size">Aa</button></header>
+      <div class="backdrop" data-act="nav.close"></div>
+      <aside class="side" id="side" aria-label="Main menu"><div class="brand"><span class="logo">📦</span><span class="lbl co-name"></span><button class="x close-nav" data-act="nav.close" aria-label="Close menu">✕</button></div>
+        <nav>${NAV.map(([k, ic, l]) => `<button class="nav" data-act="nav.go" data-id="${k}" title="${l}"><span class="ic">${ic}</span><span class="lbl">${l}</span>${k === 'home' ? '<span class="dot" hidden>0</span>' : ''}</button>`).join('')}</nav>
+        <button class="nav foot" data-act="size.cycle" title="Change text size"><span class="ic">Aa</span><span class="lbl">Text size: <b class="size-lbl">${lbl}</b></span></button>
+        <button class="nav foot collapse-btn" data-act="nav.collapse" aria-expanded="true"><span class="ic">«</span><span class="lbl">Collapse menu</span></button></aside>
+      <main id="main" tabindex="-1"></main></div>`;
+    applyNav(); App.render();
+  }
+  function welcome() {
+    const s = App.core.getSettings(); if (s.setup_done) return; App.core.setSettings({ setup_done: '1' });
+    UI.form({ title: 'Welcome to PackFlow 👋', submitLabel: 'Save and start', fields: [{ name: 'company_name', label: 'Your factory / company name', required: true, autoFocus: true, default: s.company_name === 'My Box Factory' ? '' : s.company_name, help: 'Printed on your bills. You can change it later in Settings.' }, { name: 'company_phone', label: 'Phone (optional)', half: true, type: 'tel' }, { name: 'company_gstin', label: 'Your GSTIN (optional)', half: true }],
+      onSave: v => { if (!(v.company_name || '').trim()) throw new Error('Please enter your company name.'); App.core.setSettings({ company_name: v.company_name.trim(), company_phone: v.company_phone, company_gstin: (v.company_gstin || '').toUpperCase() }); UI.toast('All set! Start with Customers or Price Quote.'); } });
+  }
+  window.addEventListener('DOMContentLoaded', async () => {
+    const app = document.getElementById('app');
+    try { const b = await openCore(); App.core = b.core; App.boot = b; shell(); welcome(); document.addEventListener('click', () => Store.askFilePermission(), { once: true }); Store.persist(); }
+    catch (e) { app.innerHTML = `<div class="gate"><div class="gatebox"><h1>Could not open the data</h1><p class="err">${h(e.message || e)}</p><p>Please close this page and open it again. If it keeps happening, restore your latest backup file from Settings.</p></div></div>`; }
+  });
+})();

@@ -1,0 +1,18 @@
+(function () {
+  const { money2, dateFmt, qtyFmt, todayStr } = Calc; const h = UI.h; const P = App.pages; let tab = 'bills', q = '';
+  P.bills = () => { const s = App.core.getSettings(); const t = todayStr(); const bills = App.core.listInvoices().filter(b => UI.matches(b, q)), pays = App.core.listPayments().filter(p => UI.matches(p, q));
+    return UI.head('Bills & Money In', 'Bills (GST invoices) you made, and payments customers made. Payments are matched to the oldest unpaid bill automatically.', `${UI.search(q, 'bill.q')}<button class="btn" data-act="bill.pay">💰 Receive payment</button><button class="btn primary" data-act="bill.new">+ Make bill</button>`) +
+      `<div class="note">GST on bills is <b>${h(s.gst_rate)}%</b>. You can change it in Settings if the law changes.</div>` + UI.tabs([['bills', 'Bills'], ['pays', 'Payments received']], tab, 'bill.tab') +
+      (tab === 'bills' ? UI.table([{ h: 'Bill', f: r => `<b>${h(r.no)}</b>` }, { h: 'Date', f: r => dateFmt(r.date) }, { h: 'Customer', f: r => h(r.customer) }, { h: 'Boxes', r: 1, f: r => qtyFmt(r.qty) }, { h: 'Total', r: 1, f: r => money2(r.total) }, { h: 'Still due', r: 1, f: r => r.cancelled ? '-' : money2(r.due) },
+        { h: 'Due date', f: r => `${dateFmt(r.due_date)} ${!r.cancelled && r.due > 0 && r.due_date < t ? UI.badge('Late', 'red') : ''}` }, { h: 'Status', f: r => UI.badge(r.status, UI.tone(r.status)) },
+        { h: '', f: r => r.cancelled ? '' : `<button class="btn sm" data-act="bill.print" data-id="${r.id}">🖨 Print</button> ${r.due > 0 ? `<button class="btn sm primary" data-act="bill.recv" data-id="${r.id}">Receive</button> ` : ''}${r.paid === 0 ? `<button class="btn sm ghost" data-act="bill.cancel" data-id="${r.id}">Cancel</button>` : ''}` }], bills, { empty: UI.empty('🧾', 'No bills yet. Deliver boxes first, then make a bill.') })
+        : UI.table([{ h: 'Receipt', f: r => `<b>${h(r.no)}</b>` }, { h: 'Date', f: r => dateFmt(r.date) }, { h: 'Customer', f: r => h(r.customer) }, { h: 'Mode', f: r => h(r.mode) }, { h: 'Reference', f: r => h(r.ref || '-') }, { h: 'Amount', r: 1, f: r => money2(r.amount) },
+          { h: 'Not yet matched', r: 1, f: r => r.cancelled ? '-' : r.advance > 0.004 ? UI.badge('Advance ' + money2(r.advance), 'blue') : '-' }, { h: '', f: r => r.cancelled ? UI.badge('Cancelled') : `<button class="btn sm ghost" data-act="bill.cpay" data-id="${r.id}">Cancel</button>` }], pays, { empty: UI.empty('💰', 'No payments yet.') })); };
+  UI.on('bill.tab', d => { tab = d.id; App.render(); });
+  UI.onIn('bill.q', el => { q = el.value; const p = el.selectionStart; App.render(); const n = UI.$('[data-in="bill.q"]'); n.focus(); n.setSelectionRange(p, p); });
+  UI.on('bill.new', () => Forms.invoice()); UI.on('bill.pay', () => Forms.payment());
+  UI.on('bill.recv', d => { const i = App.core.listInvoices().find(x => x.id === Number(d.id)); Forms.payment(i.customer_id, i.id); });
+  UI.on('bill.print', d => Print.invoice(App.core.listInvoices().find(x => x.id === Number(d.id)), App.core.getSettings()));
+  UI.on('bill.cancel', async d => { const b = App.core.listInvoices().find(x => x.id === Number(d.id)); if (await UI.confirm(`Cancel bill ${b.no}? Its number will not be used again. Do this only for a mistake.`, { danger: true, yes: 'Yes, cancel bill' })) App.act(() => App.core.cancelInvoice(b.id), 'Bill cancelled'); });
+  UI.on('bill.cpay', async d => { const p = App.core.listPayments().find(x => x.id === Number(d.id)); if (await UI.confirm(`Cancel receipt ${p.no} of ${money2(p.amount)}?`, { danger: true, yes: 'Yes, cancel' })) App.act(() => App.core.cancelPayment(p.id), 'Payment cancelled'); });
+})();

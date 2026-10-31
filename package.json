@@ -1,0 +1,2 @@
+{ "name": "packflow-simple-html", "version": "3.0.0", "private": true, "description": "Plain HTML/CSS/JS app. Node is needed ONLY to run the optional tests.",
+  "scripts": { "test": "node tests/core.test.cjs && node tests/ui-smoke.cjs" }, "devDependencies": { "jsdom": "^24.0.0" } }

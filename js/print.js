@@ -1,0 +1,24 @@
+(function () {
+  const { esc, money2, dateFmt, qtyFmt, rupeesInWords, gstSplit } = Calc;
+  const head = (s, title, no, date) => `<div class="head"><div><h1>${esc(s.company_name)}</h1><div>${esc(s.company_address)}</div><div>${s.company_phone ? 'Phone: ' + esc(s.company_phone) : ''} ${s.company_gstin ? ' | GSTIN: ' + esc(s.company_gstin) : ''}</div></div><div style="text-align:right"><h1>${title}</h1><div><b>No:</b> ${esc(no)}</div><div><b>Date:</b> ${dateFmt(date)}</div></div></div>`;
+  window.Print = {
+    invoice(i, s) { const inter = i.igst > 0;
+      UI.print(`${head(s, 'TAX INVOICE', i.no, i.date)}<div class="box"><b>Bill To:</b> ${esc(i.customer)}<br>${esc(i.address || '')} ${esc(i.city || '')}<br>${i.customer_gstin ? 'GSTIN: ' + esc(i.customer_gstin) : ''}</div>
+      <table><tr><th>Description</th><th>HSN</th><th class="r">Qty (boxes)</th><th class="r">Rate</th><th class="r">Taxable value</th></tr><tr><td>${esc(i.box_name || 'Corrugated box')} ${i.order_no ? '(Order ' + esc(i.order_no) + ')' : ''}</td><td>48191010</td><td class="r">${qtyFmt(i.qty)}</td><td class="r">${money2(i.rate)}</td><td class="r">${money2(i.taxable)}</td></tr>
+      ${inter ? `<tr><td colspan="4" class="r">IGST @ ${i.gst_rate}%</td><td class="r">${money2(i.igst)}</td></tr>` : `<tr><td colspan="4" class="r">CGST @ ${i.gst_rate / 2}%</td><td class="r">${money2(i.cgst)}</td></tr><tr><td colspan="4" class="r">SGST @ ${i.gst_rate / 2}%</td><td class="r">${money2(i.sgst)}</td></tr>`}
+      <tr class="tot"><td colspan="4" class="r">GRAND TOTAL</td><td class="r">${money2(i.total)}</td></tr></table><p><b>Amount in words:</b> ${rupeesInWords(i.total)}</p><p><b>Payment due by:</b> ${dateFmt(i.due_date)}</p>
+      ${s.bank_details ? `<div class="box"><b>Bank details</b><br>${esc(s.bank_details).replace(/\n/g, '<br>')}</div>` : ''}<div class="sign"><div>Customer signature</div><div>For ${esc(s.company_name)}</div></div>`, 'Invoice ' + i.no); },
+    challan(d, s) { UI.print(`${head(s, 'DELIVERY CHALLAN', d.no, d.date)}<div class="box"><b>Deliver To:</b> ${esc(d.customer)}<br>${esc(d.address || '')} ${esc(d.city || '')}</div>
+      <table><tr><th>Description</th><th>Size (mm)</th><th class="r">Boxes</th></tr><tr><td>${esc(d.box_name)} (Order ${esc(d.order_no)})</td><td>${d.length} x ${d.width} x ${d.height}</td><td class="r">${qtyFmt(d.qty)}</td></tr></table>
+      <div class="box">Vehicle: <b>${esc(d.vehicle)}</b> &nbsp; Driver: ${esc(d.driver)} &nbsp; Transporter: ${esc(d.transporter)} &nbsp; E-way bill: ${esc(d.eway || '-')}</div><p class="small">Goods received in good condition (please sign and return one copy).</p><div class="sign"><div>Receiver signature</div><div>Driver</div><div>For ${esc(s.company_name)}</div></div>`, 'Challan ' + d.no); },
+    quote(q, c, s) { const r = JSON.parse(q.result); const g = gstSplit(r.taxable, q.gst_rate, false);
+      UI.print(`${head(s, 'QUOTATION', q.no, q.date)}<div class="box"><b>To:</b> ${esc(c.name)}<br>${esc(c.address || '')} ${esc(c.city || '')}</div>
+      <table><tr><th>Item</th><th>Size (mm)</th><th class="r">Quantity</th><th class="r">Price / box</th><th class="r">Amount</th></tr><tr><td>${esc(q.box_name)}</td><td>${q.length} x ${q.width} x ${q.height}</td><td class="r">${qtyFmt(q.qty)}</td><td class="r">${money2(q.unit_price)}</td><td class="r">${money2(r.taxable)}</td></tr>
+      <tr><td colspan="4" class="r">GST @ ${q.gst_rate}%</td><td class="r">${money2(g.tax)}</td></tr><tr class="tot"><td colspan="4" class="r">Total</td><td class="r">${money2(g.total)}</td></tr></table><p>Valid till: <b>${dateFmt(q.valid_till)}</b></p><p class="small">Prices are for the size and paper quality mentioned.</p>`, 'Quote ' + q.no); },
+    jobCard(o, s) { const recipe = JSON.parse(o.recipe || '[]'); const sl = 2 * (o.length + o.width) + Number(s.glue_mm), sw = o.width + o.height + Number(s.trim_mm);
+      UI.print(`${head(s, 'JOB CARD', o.no, o.date)}<div class="box"><b>Customer:</b> ${esc(o.customer)} &nbsp; <b>PO:</b> ${esc(o.customer_po || '-')} &nbsp; <b>Deliver by:</b> ${dateFmt(o.due_date)}</div>
+      <table><tr><th>Box</th><th>Size L x W x H (mm)</th><th>Sheet (mm)</th><th class="r">Quantity</th></tr><tr><td>${esc(o.box_name)}</td><td>${o.length} x ${o.width} x ${o.height}</td><td>${sl} x ${sw}</td><td class="r">${qtyFmt(o.qty)}</td></tr></table>
+      <h2>Paper layers (outer to inner)</h2><table><tr><th>#</th><th>Type</th><th>GSM</th></tr>${recipe.map((l, i) => `<tr><td>${i + 1}</td><td>${l.kind}</td><td>${l.gsm}</td></tr>`).join('')}</table>
+      <h2>Steps</h2><table><tr><th>Step</th><th>Date</th><th>Boxes OK</th><th>Spoiled</th><th>Operator sign</th></tr>${['Sheet Making', 'Printing', 'Cutting & Creasing', 'Pasting / Stitching', 'Checking'].map(x => `<tr><td>${x}</td><td></td><td></td><td></td><td></td></tr>`).join('')}</table><p>Note: ${esc(o.note || '')}</p>`, 'Job card ' + o.no); }
+  };
+})();
